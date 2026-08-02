@@ -35,7 +35,7 @@ def login(username: str, password: str) -> str:
     )
 
     data = response.json()
-
+    print("RESPOSTA LOGIN:", data)
     if data['error']:
         raise Exception(data['mensagem'])
     
