@@ -1,7 +1,7 @@
 environment:
   app: UFSMDigital
   device-id: ee54628f-9a0e-4d5c-bd38-334a4b190363
-  device-info: Apple iPhone ios:15.7.3
+  device-info: Windows
   message-token: c7ptbA7De0nvnvagiGEgbC:APA91bE1AABlRKEjUB_HCB_yVKmocYxOgym2ebWlpP6hCjMYpTcgiTMiKTu7KZgTMLIrv55SieM0fLqWBIiMLULrwTDISoszte9zMAVaMfQqt9cxAHaxJ47moYT628v9JMBQftaLVxKm
 
 schedules:
