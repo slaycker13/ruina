@@ -130,6 +130,7 @@ if len(tomorrow_schedules) != 0:
             print(f"Agendando refeições para o RU {schedule['restaurant']}... ({schedule})")
 
             statuses = schedule_meal(access_token, tomorrow, tomorrow, schedule)
+            print(statuses)
 
             for status in statuses:
                 date = datetime.strptime(status['dataRefAgendada'], '%Y-%m-%d %H:%M:%S')
