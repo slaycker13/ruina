@@ -7,15 +7,12 @@ from datetime import datetime, timedelta
 
 BASE_URL = 'https://portal.ufsm.br/mobile/webservice/flutter'
 
-
 def read_config() -> dict:
     with open('config.yaml', 'r') as document:
         return yaml.safe_load(document)
 
-
 def is_weekday(date: datetime, weekday: str) -> bool:
     return date.strftime('%a') == weekday
-
 
 def resolve_restaurant_id(restaurant: int):
     match restaurant:
@@ -23,7 +20,6 @@ def resolve_restaurant_id(restaurant: int):
             return 41
         case _:
             return restaurant
-
 
 def login(username: str, password: str) -> str:
     response = requests.post(
@@ -34,24 +30,22 @@ def login(username: str, password: str) -> str:
             'deviceInfo': config['environment']['device-info'],
             'messageToken': config['environment']['message-token'],
             'login': username,
-            'senha': password
+            'senha': password,
         },
         headers={
             'User-Agent': 'Dart/3.12 (dart:io)',
             'x-ufsm-version': '50600',
             'Content-Type': 'application/json; charset=UTF-8'
         }
+        
     )
 
     data = response.json()
 
-    print("RESPOSTA LOGIN:", data)
-
-    if data.get('error'):
+    if data['error']:
         raise Exception(data.get('mensagem', 'Erro no login'))
-
+    
     return data['body']['accessToken']
-
 
 def schedule_meal(token: str, start: datetime, end: datetime, options: dict) -> list:
     payload = {
@@ -62,6 +56,7 @@ def schedule_meal(token: str, start: datetime, end: datetime, options: dict) -> 
         'tiposRefeicoes': []
     }
 
+    # O payload precisou ser substituído por um int()
     if options['coffee']:
         payload['tiposRefeicoes'].append(1)
 
@@ -78,50 +73,27 @@ def schedule_meal(token: str, start: datetime, end: datetime, options: dict) -> 
             'User-Agent': 'Dart/3.12 (dart:io)',
             'x-ufsm-version': '50600',
             'X-UFSM-Device-ID': config['environment']['device-id'],
-            'X-UFSM-Access-Token': token,
             'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json; charset=UTF-8'
         }
     )
-
-    data = response.json()
-
-    print("RESPOSTA AGENDAMENTO:", data)
-
-    if isinstance(data, dict) and 'body' in data:
-        return data['body']
-
-    return data
-
+    return response.json()['body']
 
 def find_schedules(date):
     filtered_schedules = filter(
-        lambda s: is_weekday(date, s['weekday']),
+        lambda s : is_weekday(date, s['weekday']),
         config['schedules']
     )
 
     return list(filtered_schedules)
-
 
 parser = ArgumentParser(
     prog='ruina',
     description='Agenda automaticamente as refeições do RU da UFSM.'
 )
 
-parser.add_argument(
-    '-u',
-    '--username',
-    dest='username',
-    help='Sua matrícula do aplicativo da UFSM.'
-)
-
-parser.add_argument(
-    '-p',
-    '--password',
-    dest='password',
-    help='Sua senha do aplicativo da UFSM.'
-)
-
+parser.add_argument('-u --username', dest='username', help='Sua matrícula do aplicativo da UFSM.')
+parser.add_argument('-p --password', dest='password', help='Sua senha do aplicativo da UFSM.')
 
 args = parser.parse_args()
 
@@ -129,12 +101,10 @@ print('Lendo configuração...')
 config = read_config()
 
 print('Procurando refeições para serem agendadas amanhã...')
-
 now = datetime.now(pytz.timezone('Brazil/East'))
 tomorrow = now + timedelta(1)
 
 tomorrow_schedules = find_schedules(tomorrow)
-
 
 if len(tomorrow_schedules) != 0:
     print(f'Encontrado {len(tomorrow_schedules)} refeição(s) para serem agendadas.')
@@ -142,58 +112,30 @@ if len(tomorrow_schedules) != 0:
     try:
         print('Logando no aplicativo...')
         access_token = login(args.username, args.password)
-
     except Exception as exception:
         print(f'Falha ao logar: {str(exception)}')
-
     else:
         failed = False
 
         for schedule in tomorrow_schedules:
-            print(
-                f"Agendando refeições para o RU {schedule['restaurant']}... ({schedule})"
-            )
+            print(f"Agendando refeições para o RU {schedule['restaurant']}... ({schedule})")
 
-            statuses = schedule_meal(
-                access_token,
-                tomorrow,
-                tomorrow,
-                schedule
-            )
+            statuses = schedule_meal(access_token, tomorrow, tomorrow, schedule)
 
             for status in statuses:
-
-                if status.get('error'):
-                    print(
-                        f"Erro da API: {status.get('mensagem')}"
-                    )
-                    failed = True
-                    continue
-
-                date = datetime.strptime(
-                    status['dataRefAgendada'],
-                    '%Y-%m-%d %H:%M:%S'
-                )
-
+                date = datetime.strptime(status['dataRefAgendada'], '%Y-%m-%d %H:%M:%S')
                 message = (
                     f"{date.strftime('%d/%m/%Y')} - "
-                    f"RU {schedule['restaurant']} "
-                    f"({status['tipoRefeicao']}): "
+                    f"RU {schedule['restaurant']} ({status['tipoRefeicao']}): "
                 )
 
-                if status.get('sucesso'):
+                if status['sucesso']:
                     print(message + 'Agendado com sucesso.')
                 else:
-                    print(
-                        '[Erro] ' +
-                        message +
-                        status.get('impedimento', 'Erro desconhecido') +
-                        '.'
-                    )
+                    print('[Erro] ' + message + status['impedimento'] + '.')
                     failed = True
 
-        if failed:
-            sys.exit(1)
-
+        ##if failed:
+            ##sys.exit(1)
 else:
     print('Não há nenhuma refeição para ser agendada amanhã.')
