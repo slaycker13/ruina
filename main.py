@@ -80,10 +80,10 @@ def schedule_meal(token: str, start: datetime, end: datetime, options: dict) -> 
     response = requests.post(
         f'{BASE_URL}/ru/agendaRefeicoes',
         json=payload,
-        headers={
-            'X-UFSM-Device-ID': config['environment']['device-id'],
-            'X-UFSM-Access-Token': token
-        }    
+        hheaders={
+           'X-UFSM-Device-ID': config['environment']['device-id'],
+           'X-UFSM-Access-Token': f'Bearer {token}'
+        } 
     )
 
     return response.json()
@@ -132,7 +132,12 @@ if len(tomorrow_schedules) != 0:
             statuses = schedule_meal(access_token, tomorrow, tomorrow, schedule)
             print(statuses)
 
-            for status in statuses:
+           for status in statuses:
+                if status.get('error'):
+                    print(f"Erro da API: {status.get('mensagem')}")
+                    failed = True
+                    continue
+            
                 date = datetime.strptime(status['dataRefAgendada'], '%Y-%m-%d %H:%M:%S')
                 message = (
                     f"{date.strftime('%d/%m/%Y')} - "
