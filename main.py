@@ -50,7 +50,7 @@ def login(username: str, password: str) -> str:
             print(f"Tentativa {tentativa + 1}/3 falhou: {e}")
             if tentativa == 2:
                 raise
-            time.sleep(10)
+            time.sleep(120)
 
 def schedule_meal(token: str, start: datetime, end: datetime, options: dict) -> list:
     payload = {
